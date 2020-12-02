@@ -1,0 +1,171 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h> 
+
+#define NN 312
+#define MM 156
+#define MATRIX_A 0xB5026F5AA96619E9ULL
+#define UM 0xFFFFFFFF80000000ULL /* 최상위 33 비트 */
+#define LM 0x7FFFFFFFULL /* 최하위 31 비트 */
+
+
+/* 상태 벡터의 배열 */
+static unsigned long long mt[NN];
+/* mti == NN + 1은 mt [NN]이 초기화되지 않았 음을 의미합니다. */
+static int mti = NN + 1;
+
+/* 숫자 자리 변경 */
+int plusstring(char a1[10], char a2[5], char a3[5], char a4[3], char a5[3])
+{
+    strcat(a1, a2);
+    strcat(a1, a3);
+    strcat(a1, a4);
+    strcat(a1, a5);
+    char* b1 = a1;
+    return atoi(b1);
+}
+
+/* 정수 -> 문자열 -> 정수 */
+int arrsizechan(int a, int b, int c, int d, int e) {
+    char* s1, * s2, * s3, * s4, * s5;
+    int z;
+    s1 = (char*)malloc(sizeof(char) * 10);
+    s2 = (char*)malloc(sizeof(char) * 5);
+    s3 = (char*)malloc(sizeof(char) * 5);
+    s4 = (char*)malloc(sizeof(char) * 3);
+    s5 = (char*)malloc(sizeof(char) * 3);
+
+    sprintf(s5, "%d", a);
+    sprintf(s4, "%d", b);
+    sprintf(s3, "%d", c);
+    sprintf(s2, "%d", d);
+    sprintf(s1, "%d", e);
+
+    return plusstring(s1, s2, s3, s4, s5);
+}
+
+/* 시드를 사용하여 mt [NN]을 초기화합니다. */
+void init_genrand64(unsigned long long seed)
+{
+    mt[0] = seed;
+    for (mti = 1; mti < NN; mti++)
+        mt[mti] = (6364136223846793005ULL * (mt[mti - 1] ^ (mt[mti - 1] >> 62)) + mti);
+}
+
+/* 배열 길이의 배열로 초기화 */
+/* init_key는 키 초기화를위한 배열 */
+/* key_length는 길이 */
+void init_by_array64(unsigned long long init_key[],
+    unsigned long long key_length)
+{
+    unsigned long long i, j, k;
+    init_genrand64(19650218ULL);
+    i = 1; j = 0;
+    k = (NN > key_length ? NN : key_length);
+    for (; k; k--) {
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 3935559000370003845ULL))
+            + init_key[j] + j; /* 비선형 */
+        i++; j++;
+        if (i >= NN) { mt[0] = mt[NN - 1]; i = 1; }
+        if (j >= key_length) j = 0;
+    }
+    for (k = NN - 1; k; k--) {
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 2862933555777941757ULL))
+            - i; /* 비선형 */
+        i++;
+        if (i >= NN) { mt[0] = mt[NN - 1]; i = 1; }
+    }
+
+    mt[0] = 1ULL << 63; /* MSB는 1이고; 0이 아닌 초기 배열 보장 */
+}
+
+/* [0, 2 ^ 64-1] 간격 에서 난수를 생성합니다 */
+unsigned long long genrand64_int64(void)
+{
+    int i;
+    unsigned long long x;
+    static unsigned long long mag01[2] = { 0ULL, MATRIX_A };
+
+    if (mti >= NN) { /* 한 번에 NN 단어 생성 */
+
+        /* init_genrand64 ()가 호출되지 않은 경우, */
+        /* 기본 초기 시드가 사용됨 */
+        if (mti == NN + 1)
+            init_genrand64(5489ULL);
+
+        for (i = 0; i < NN - MM; i++) {
+            x = (mt[i] & UM) | (mt[i + 1] & LM);
+            mt[i] = mt[i + MM] ^ (x >> 1) ^ mag01[(int)(x & 1ULL)];
+        }
+        for (; i < NN - 1; i++) {
+            x = (mt[i] & UM) | (mt[i + 1] & LM);
+            mt[i] = mt[i + (MM - NN)] ^ (x >> 1) ^ mag01[(int)(x & 1ULL)];
+        }
+        x = (mt[NN - 1] & UM) | (mt[0] & LM);
+        mt[NN - 1] = mt[MM - 1] ^ (x >> 1) ^ mag01[(int)(x & 1ULL)];
+
+        mti = 0;
+    }
+
+    x = mt[mti++];
+
+    x ^= (x >> 29) & 0x5555555555555555ULL;
+    x ^= (x << 17) & 0x71D67FFFEDA60000ULL;
+    x ^= (x << 37) & 0xFFF7EEE000000000ULL;
+    x ^= (x >> 43);
+
+    return x;
+}
+
+/* [0,1)-실제 구간에서 난수를 생성합니다. */
+double genrand64_real2(void)
+{
+    return (genrand64_int64() >> 11) * (1.0 / 9007199254740992.0);
+}
+
+int main(void)
+{
+    int i, j, array[5], num1, z, *u;
+    unsigned long long init[4], length = 4;
+    char a[10000], *n;
+   
+    printf("key를 입력해주세요. (5자리 숫자) :");
+    scanf_s("%d", &num1, sizeof(8));
+
+    for (j = 0; j < 5; j++) {
+        array[j] = num1 % 10;
+        num1 = num1 / 10;
+    }
+
+    init[0] = arrsizechan(array[0], array[1], array[2], array[3], array[4]);
+    init[1] = arrsizechan(array[4], array[0], array[1], array[2], array[3]);
+    init[2] = arrsizechan(array[3], array[4], array[0], array[1], array[2]);
+    init[3] = arrsizechan(array[2], array[3], array[4], array[0], array[1]);
+
+    init_by_array64(init, length);
+    
+    FILE* pFile = fopen("Plantxt.txt", "r");
+    
+    fgets(a, sizeof(a), pFile);
+    printf("%s\n", a);
+
+    fclose(pFile);
+
+    n = (char*)malloc(sizeof(char) * strlen(a));
+    u = (int*)malloc(sizeof(int) * strlen(a));
+
+    FILE* pf = fopen("Ciphertxt.txt", "w");
+
+    for (i = 0; i < strlen(a); i++) {
+
+        z = genrand64_real2() * 100;
+        u[i] = a[i] ^ z;
+        printf("%c", u[i]);
+        fputc(u[i], pf);
+    }
+    fclose(pf);
+    
+    return 0;
+}
