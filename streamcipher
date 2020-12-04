@@ -146,7 +146,7 @@ int main(void)
 
     init_by_array64(init, length);
     
-    FILE* pFile = fopen("Plantxt.txt", "r");
+    FILE* pFile = fopen("Plaintxt.txt", "r");
     
     fgets(a, sizeof(a), pFile);
     printf("%s\n", a);
