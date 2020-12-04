@@ -1,0 +1,298 @@
+package steamcipher;
+
+import java.io.*;
+import java.util.Scanner;
+import java.util.List;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+
+public strictfp class MersenneTwister extends java.util.Random implements Serializable, Cloneable
+    {
+    // 직렬화
+    private static final long serialVersionUID = -4035832775130174188L;  // 버전 15부터 잠김
+
+    // 기간 매개 변수
+    private static final int N = 624;
+    private static final int M = 397;
+    private static final int MATRIX_A = 0x9908b0df;   // 개인 정적 최종 * 상수 벡터 a
+    private static final int UPPER_MASK = 0x80000000; // 가장 중요한 w-r 비트
+    private static final int LOWER_MASK = 0x7fffffff; // 최하위 r 비트
+
+    // 템퍼링 매개 변수
+    private static final int TEMPERING_MASK_B = 0x9d2c5680;
+    private static final int TEMPERING_MASK_C = 0xefc60000;
+    
+    private int mt[]; // the array for the state vector
+    private int mti; // mti==N+1 means mt[N] is not initialized
+    private int mag01[];
+    
+
+    private double __nextNextGaussian;
+    private boolean __haveNextNextGaussian;
+
+    public Object clone()
+        {
+        try
+            {
+            MersenneTwister f = (MersenneTwister)(super.clone());
+            f.mt = (int[])(mt.clone());
+            f.mag01 = (int[])(mag01.clone());
+            return f;
+            }
+        catch (CloneNotSupportedException e) { throw new InternalError(); } // should never happen
+        }
+
+    
+    public synchronized boolean stateEquals(MersenneTwister other)
+        {
+        if (other == this) return true;
+        if (other == null)return false;
+        synchronized(other)
+            {
+            if (mti != other.mti) return false;
+            for(int x=0;x<mag01.length;x++)
+                if (mag01[x] != other.mag01[x]) return false;
+            for(int x=0;x<mt.length;x++)
+                if (mt[x] != other.mt[x]) return false;
+            return true;
+            }
+        }
+
+
+    public synchronized void readState(DataInputStream stream) throws IOException
+        {
+        int len = mt.length;
+        for(int x=0;x<len;x++) mt[x] = stream.readInt();
+        
+        len = mag01.length;
+        for(int x=0;x<len;x++) mag01[x] = stream.readInt();
+        
+        mti = stream.readInt();
+        __nextNextGaussian = stream.readDouble();
+        __haveNextNextGaussian = stream.readBoolean();
+        }
+        
+
+    public synchronized void writeState(DataOutputStream stream) throws IOException
+        {
+        int len = mt.length;
+        for(int x=0;x<len;x++) stream.writeInt(mt[x]);
+        
+        len = mag01.length;
+        for(int x=0;x<len;x++) stream.writeInt(mag01[x]);
+        
+        stream.writeInt(mti);
+        stream.writeDouble(__nextNextGaussian);
+        stream.writeBoolean(__haveNextNextGaussian);
+        }
+
+
+    public MersenneTwister()
+        {
+        this(System.currentTimeMillis());
+        }
+    
+    public MersenneTwister(long seed)
+        {
+        super(seed);    /* just in case */
+        setSeed(seed);
+        }
+    
+    public MersenneTwister(int[] array)
+        {
+        super(System.currentTimeMillis());    /* pick something at random just in case */
+        setSeed(array);
+        }
+    
+    synchronized public void setSeed(long seed)
+        {
+ 
+        super.setSeed(seed);
+
+        __haveNextNextGaussian = false;
+
+        mt = new int[N];
+        
+        mag01 = new int[2];
+        mag01[0] = 0x0;
+        mag01[1] = MATRIX_A;
+
+        mt[0]= (int)(seed & 0xffffffff);
+        mt[0] = (int) seed;
+        for (mti=1; mti<N; mti++) 
+            {
+            mt[mti] = 
+                (1812433253 * (mt[mti-1] ^ (mt[mti-1] >>> 30)) + mti); 
+            }
+        }
+
+    synchronized public void setSeed(int[] array)
+        {
+        if (array.length == 0)
+            throw new IllegalArgumentException("Array length must be greater than zero");
+        int i, j, k;
+        setSeed(19650218);
+        i=1; j=0;
+        k = (N>array.length ? N : array.length);
+        for (; k!=0; k--) 
+            {
+            mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1664525)) + array[j] + j; /* non linear */
+            // mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */
+            i++;
+            j++;
+            if (i>=N) { mt[0] = mt[N-1]; i=1; }
+            if (j>=array.length) j=0;
+            }
+        for (k=N-1; k!=0; k--) 
+            {
+            mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1566083941)) - i; /* non linear */
+            // mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */
+            i++;
+            if (i>=N) 
+                {
+                mt[0] = mt[N-1]; i=1; 
+                }
+            }
+        mt[0] = 0x80000000; /* MSB is 1; assuring non-zero initial array */ 
+        }
+
+
+    synchronized protected int next(int bits)
+        {
+        int y;
+        
+        if (mti >= N)   
+            {
+            int kk;
+            final int[] mt = this.mt; 
+            final int[] mag01 = this.mag01; 
+            
+            for (kk = 0; kk < N - M; kk++)
+                {
+                y = (mt[kk] & UPPER_MASK) | (mt[kk+1] & LOWER_MASK);
+                mt[kk] = mt[kk+M] ^ (y >>> 1) ^ mag01[y & 0x1];
+                }
+            for (; kk < N-1; kk++)
+                {
+                y = (mt[kk] & UPPER_MASK) | (mt[kk+1] & LOWER_MASK);
+                mt[kk] = mt[kk+(M-N)] ^ (y >>> 1) ^ mag01[y & 0x1];
+                }
+            y = (mt[N-1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
+            mt[N-1] = mt[M-1] ^ (y >>> 1) ^ mag01[y & 0x1];
+
+            mti = 0;
+            }
+  
+        y = mt[mti++];
+        y ^= y >>> 11;                          
+        y ^= (y << 7) & TEMPERING_MASK_B;       
+        y ^= (y << 15) & TEMPERING_MASK_C;      
+        y ^= (y >>> 18);                        
+
+        return y >>> (32 - bits);    
+        }
+
+    
+    public float nextFloat()
+        {
+        return next(24) / ((float)(1 << 24));
+        }
+
+    public float nextFloat(boolean includeZero, boolean includeOne)
+        {
+        float d = 0.0f;
+        do
+            {
+            d = nextFloat();                           
+            if (includeOne && nextBoolean()) d += 1.0f; 
+            } 
+        while ( (d > 1.0f) ||                           
+            (!includeZero && d == 0.0f));           
+        return d;
+        }
+
+    public static void main(String args[])
+        { 
+        int i, j, a, x;
+        int[] num1 = new int[5];
+        String s = "";
+        String key1_s, key2_s, key3_s, key4_s;
+        MersenneTwister r;
+        
+        Path path = Paths.get("C:\\Users\\Lenovo\\workspace\\soo\\bin\\Plaintxt.txt");
+        Charset vs = StandardCharsets.UTF_8;
+        List<String> list = new ArrayList<String>();
+        try{
+            list = Files.readAllLines(path,vs);
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        for(String readLine : list){
+            s = readLine;
+        }
+        
+        char[] data = new char [s.length()];
+ 	    int[] u = new int[s.length()];
+ 	    int[] z = new int[s.length()];
+ 	    char[] calpa = new char [s.length()];
+        
+        System.out.print("key를 입력해주세요. (5자리 숫자)");
+        Scanner sc = new Scanner(System.in);
+        a = sc.nextInt();
+        
+        for(i=0;i<5;i++){
+        	num1[i] = a%10;
+        	a = a/10;   
+        }
+        
+        String str5 = String.valueOf(num1[0]);
+        String str4 = String.valueOf(num1[1]);
+        String str3 = String.valueOf(num1[2]);
+        String str2 = String.valueOf(num1[3]);
+        String str1 = String.valueOf(num1[4]);
+        
+        key1_s = str1 + str2 + str3 + str4 + str5;
+        key2_s = str2 + str3 + str4 + str5 + str1;
+        key3_s = str3 + str4 + str5 + str1 + str2;
+        key4_s = str4 + str5 + str1 + str2 + str3;
+        
+        int key1 = Integer.valueOf(key1_s);
+        int key2 = Integer.valueOf(key2_s);
+        int key3 = Integer.valueOf(key3_s);
+        int key4 = Integer.valueOf(key4_s);
+        
+        r = new MersenneTwister(new int[]{key1, key2, key3, key4});
+        
+        for(j=0;j<s.length();j++){
+      	  data[j] = s.charAt(j);
+      	  z[j] = (int)(r.nextFloat()*100);
+      	  u[j] = data[j]^z[j];
+      	  calpa[j] = (char)u[j];
+        }
+        for(x=0;x<s.length();x++){
+        	System.out.print(z[x]);
+        }
+        System.out.print(" ");
+        System.out.print(calpa);
+        
+        try{
+            File file = new File("C:\\Users\\Lenovo\\workspace\\soo\\bin\\Ciphertxt.txt");
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+            
+            if(file.isFile() && file.canWrite()){
+                bufferedWriter.write(calpa);
+                bufferedWriter.close();
+            }
+        }catch (IOException e) {
+            System.out.println(e);
+        }
+        
+        
+        }
+    
+    }
