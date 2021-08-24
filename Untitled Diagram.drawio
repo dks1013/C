@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-08-24T10:13:21.009Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36" etag="KZmyNYiRqT3KAogU3TwC" version="14.9.8" type="github">
+<mxfile host="app.diagrams.net" modified="2021-08-24T10:13:43.594Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36" etag="jgN6cA-QhFG2yzTEJWM1" version="14.9.8" type="github">
   <diagram id="pH6HQCZt80YhjG_G_fc8" name="Page-1">
     <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -110,17 +110,17 @@
             <mxPoint x="520" y="480" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="8lUbKgz4443Ifh4K2C8j-28" value="" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1">
+        <mxCell id="8lUbKgz4443Ifh4K2C8j-28" value="" style="endArrow=classic;html=1;fontSize=10;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="8lUbKgz4443Ifh4K2C8j-17">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="440" y="599.5" as="sourcePoint" />
-            <mxPoint x="520" y="599.5" as="targetPoint" />
+            <mxPoint x="380" y="560" as="sourcePoint" />
+            <mxPoint x="460" y="560" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="8lUbKgz4443Ifh4K2C8j-29" value="연결시도" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="450" y="454" width="60" height="26" as="geometry" />
         </mxCell>
         <mxCell id="8lUbKgz4443Ifh4K2C8j-30" value="명령어 전달" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="450" y="572" width="70" height="26" as="geometry" />
+          <mxGeometry x="320" y="530" width="70" height="26" as="geometry" />
         </mxCell>
         <mxCell id="8lUbKgz4443Ifh4K2C8j-32" value="&lt;span style=&quot;font-size: 30px&quot;&gt;전체 부분&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="40" y="140" width="305" height="80" as="geometry" />
